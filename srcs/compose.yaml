@@ -1,0 +1,61 @@
+services:
+  nginx:
+    build: requirements/nginx/
+    container_name: nginx
+    ports:
+      - "443:443"
+    restart: always
+    volumes:
+      - webserver:/var/www/html/
+    networks:
+      - frontend
+    depends_on:
+      - "wordpress"
+  wordpress:
+    tty: true
+    build: requirements/wordpress/
+    container_name: wordpress
+    env_file:
+      - .env
+    ports:
+      - "9000:9000"
+    restart: always
+    volumes:
+      - webserver:/var/www/html
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - "mariadb"
+  mariadb:
+    build:
+      context: requirements/mariadb/
+      args:
+        DB_NAME: ${DB_NAME}
+        MYSQL_ADMIN_USER: ${MYSQL_ADMIN_USER}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    container_name: mariadb
+    ports:
+      - "3306:3306"
+    restart: always
+    volumes:
+      - mysql:/var/lib/mysql/
+    networks:
+      - backend
+volumes:
+  webserver:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/drubio-m/data/webserver'
+  mysql:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: '/home/drubio-m/data/mysql'
+networks:
+  frontend:
+  backend:
