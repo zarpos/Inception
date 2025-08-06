@@ -1,19 +1,18 @@
-FROM 	debian:buster
+FROM debian:bookworm
 
-ARG	DB_NAME MYSQL_ADMIN_USER MYSQL_PASSWORD MYSQL_ROOT_PASSWORD
+# Instala MariaDB
+RUN apt-get update && apt-get install -y mariadb-server && apt-get clean
 
-RUN 	apt-get update && apt-get install -y mariadb-server
+# Copia el archivo de configuración (si lo tienes)
+COPY /tools/50-server.cnf /etc/mysql/mariadb.conf.d/
 
-COPY	/tools/50-server.cnf etc/mysql/mariadb.conf.d/
+# Copia el script de inicialización
+COPY /tools/init-db.sh /docker-entrypoint-initdb.d/init-db.sh
+RUN chmod +x /docker-entrypoint-initdb.d/init-db.sh
 
-RUN	echo "CREATE DATABASE IF NOT EXISTS ${DB_NAME};" >> configure.sql
+# Expon el puerto
+EXPOSE 3306
 
-RUN	echo "CREATE USER IF NOT EXISTS '${MYSQL_ADMIN_USER}' IDENTIFIED BY '${MYSQL_PASSWORD}';" >> configure.sql
-
-RUN	echo "GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_ADMIN_USER}' IDENTIFIED BY '${MYSQL_PASSWORD}';" >> configure.sql
-
-RUN	echo "ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';" >> configure.sql
-
-RUN	service mysql start && mysql < configure.sql
-
+# Usa el entrypoint oficial de MariaDB
 CMD ["mysqld"]
+
